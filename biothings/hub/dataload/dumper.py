@@ -68,7 +68,7 @@ class BaseDumper(object):
         self.t0 = time.time()
         self.logfile = None
         self.prev_data_folder = None
-        self.timestamp = time.strftime('%Y%m%d')
+        self.timestamp = time.strftime("%Y%m%d")
         self.prepared = False
         self.steps = ["dump", "post"]
 
@@ -153,8 +153,8 @@ class BaseDumper(object):
         raise NotImplementedError("Define in subclass")
 
     def remote_is_better(self, remotefile, localfile):
-        '''Compared to local file, check if remote file is worth downloading.
-        (like either bigger or newer for instance)'''
+        """Compared to local file, check if remote file is worth downloading.
+        (like either bigger or newer for instance)"""
         raise NotImplementedError("Define in subclass")
 
     def download(self, remotefile, localfile):
@@ -232,7 +232,7 @@ class BaseDumper(object):
         pass
 
     def setup_log(self):
-        log_folder = os.path.join(btconfig.LOG_FOLDER, 'dataload')
+        log_folder = os.path.join(btconfig.LOG_FOLDER, "dataload")
         self.logger, self.logfile = get_logger("dump_%s" % self.src_name, log_folder=log_folder)
 
     def prepare(self, state={}):  # noqa: B006
@@ -266,7 +266,7 @@ class BaseDumper(object):
     def prepare_src_dump(self):
         # Mongo side
         self.src_dump = get_src_dump()
-        self.src_doc = self.src_dump.find_one({'_id': self.src_name}) or {}
+        self.src_doc = self.src_dump.find_one({"_id": self.src_name}) or {}
 
     def register_status(self, status, transient=False, **extra):
         try:
@@ -297,14 +297,14 @@ class BaseDumper(object):
                 self.src_doc.pop(field)
 
         current_download_info = {
-            '_id': self.src_name,
-            'download': {
-                'release': release,
-                'data_folder': data_folder,
-                'logfile': self.logfile,
-                'started_at': datetime.now().astimezone(),
-                'status': status
-            }
+            "_id": self.src_name,
+            "download": {
+                "release": release,
+                "data_folder": data_folder,
+                "logfile": self.logfile,
+                "started_at": datetime.now().astimezone(),
+                "status": status,
+            },
         }
         # Update last success download time.
         if status == "success":
@@ -331,12 +331,12 @@ class BaseDumper(object):
         self.src_dump.save(self.src_doc)
 
     async def dump(self, steps=None, force=False, job_manager=None, check_only=False, **kwargs):
-        '''
+        """
         Dump (ie. download) resource as needed
         this should be called after instance creation
         'force' argument will force dump, passing this to
         create_todump_list() method.
-        '''
+        """
         # signature says it's optional but for now it's not...
         assert job_manager
         # check what to do
@@ -482,7 +482,7 @@ class BaseDumper(object):
             suffix = getattr(self, self.__class__.SUFFIX_ATTR)
             return os.path.join(self.src_root_folder, suffix)
         else:
-            return os.path.join(self.src_root_folder, 'latest')
+            return os.path.join(self.src_root_folder, "latest")
 
     @property
     def current_data_folder(self):
@@ -559,10 +559,10 @@ from ftplib import FTP
 
 
 class FTPDumper(BaseDumper):
-    FTP_HOST = ''
-    CWD_DIR = ''
-    FTP_USER = ''
-    FTP_PASSWD = ''
+    FTP_HOST = ""
+    CWD_DIR = ""
+    FTP_USER = ""
+    FTP_PASSWD = ""
     FTP_TIMEOUT = 10 * 60.0  # we want dumper to timout if necessary
     BLOCK_SIZE: Optional[int] = None  # default is still kept at 8KB
 
@@ -574,16 +574,16 @@ class FTPDumper(BaseDumper):
             return self.BLOCK_SIZE
         # else:
         known_optimal_sizes = {
-            'ftp.ncbi.nlm.nih.gov': 33554432,
+            "ftp.ncbi.nlm.nih.gov": 33554432,
             # see https://ftp.ncbi.nlm.nih.gov/README.ftp for reason
             # add new ones above
-            'DEFAULT': 8192,
+            "DEFAULT": 8192,
         }
         normalized_host = self.FTP_HOST.lower()
         if normalized_host in known_optimal_sizes:
             return known_optimal_sizes[normalized_host]
         else:
-            return known_optimal_sizes['DEFAULT']
+            return known_optimal_sizes["DEFAULT"]
 
     def prepare_client(self):
         # FTP side
@@ -609,13 +609,13 @@ class FTPDumper(BaseDumper):
         try:
             with open(localfile, "wb") as out_f:
                 self.client.retrbinary(
-                    cmd='RETR %s' % remotefile, callback=out_f.write, blocksize=block_size
+                    cmd="RETR %s" % remotefile, callback=out_f.write, blocksize=block_size
                 )
             # set the mtime to match remote ftp server
-            response = self.client.sendcmd('MDTM ' + remotefile)
+            response = self.client.sendcmd("MDTM " + remotefile)
             code, lastmodified = response.split()
             # an example: 'last-modified': '20121128150000'
-            lastmodified = time.mktime(datetime.strptime(lastmodified, '%Y%m%d%H%M%S').timetuple())
+            lastmodified = time.mktime(datetime.strptime(lastmodified, "%Y%m%d%H%M%S").timetuple())
             os.utime(localfile, (lastmodified, lastmodified))
             return code
         except Exception as e:
@@ -635,10 +635,10 @@ class FTPDumper(BaseDumper):
             return True
         local_lastmodified = int(res.st_mtime)
         self.logger.info("Getting modification time for '%s'" % remotefile)
-        response = self.client.sendcmd('MDTM ' + remotefile)
+        response = self.client.sendcmd("MDTM " + remotefile)
         code, remote_lastmodified = response.split()
         remote_lastmodified = int(
-            time.mktime(datetime.strptime(remote_lastmodified, '%Y%m%d%H%M%S').timetuple())
+            time.mktime(datetime.strptime(remote_lastmodified, "%Y%m%d%H%M%S").timetuple())
         )
 
         if remote_lastmodified > local_lastmodified:
@@ -649,7 +649,7 @@ class FTPDumper(BaseDumper):
             return True
         local_size = res.st_size
         self.client.sendcmd("TYPE I")
-        response = self.client.sendcmd('SIZE ' + remotefile)
+        response = self.client.sendcmd("SIZE " + remotefile)
         code, remote_size = map(int, response.split())
         if remote_size > local_size:
             self.logger.debug(
@@ -662,12 +662,12 @@ class FTPDumper(BaseDumper):
 
 
 class LastModifiedBaseDumper(BaseDumper):
-    '''
+    """
     Use SRC_URLS as a list of URLs to download and
     implement create_todump_list() according to that list.
     Shoud be used in parallel with a dumper talking the
     actual underlying protocol
-    '''
+    """
 
     SRC_URLS = []  # must be overridden in subclass
 
@@ -726,8 +726,8 @@ class LastModifiedFTPDumper(LastModifiedBaseDumper):
             {
                 "FTP_HOST": split.hostname,
                 "CWD_DIR": "/".join(split.path.split("/")[:-1]),
-                "FTP_USER": split.username or '',
-                "FTP_PASSWD": split.password or '',
+                "FTP_USER": split.username or "",
+                "FTP_PASSWD": split.password or "",
                 "SRC_NAME": self.__class__.SRC_NAME,
                 "SRC_ROOT_FOLDER": self.__class__.SRC_ROOT_FOLDER,
             },
@@ -745,9 +745,9 @@ class LastModifiedFTPDumper(LastModifiedBaseDumper):
         url = self.__class__.SRC_URLS[-1]
         ftpdumper = self.get_client_for_url(url)
         remotefile = self.get_remote_file(url)
-        response = ftpdumper.client.sendcmd('MDTM ' + remotefile)
+        response = ftpdumper.client.sendcmd("MDTM " + remotefile)
         code, lastmodified = response.split()
-        lastmodified = time.mktime(datetime.strptime(lastmodified, '%Y%m%d%H%M%S').timetuple())
+        lastmodified = time.mktime(datetime.strptime(lastmodified, "%Y%m%d%H%M%S").timetuple())
         dt = datetime.fromtimestamp(lastmodified)
         self.release = dt.strftime(self.__class__.RELEASE_FORMAT)
         ftpdumper.release_client()
@@ -819,7 +819,7 @@ class HTTPDumper(BaseDumper):
                 # localfile is an absolute path, replace last part
                 localfile = os.path.join(os.path.dirname(localfile), parsed[1]["filename"])
         self.logger.debug("Downloading '%s' as '%s'" % (remoteurl, localfile))
-        fout = open(localfile, 'wb')
+        fout = open(localfile, "wb")
         for chunk in res.iter_content(chunk_size=512 * 1024):
             if chunk:
                 fout.write(chunk)
@@ -885,7 +885,7 @@ class LastModifiedHTTPDumper(HTTPDumper, LastModifiedBaseDumper):
         for _ in self.__class__.LAST_MODIFIED:
             try:
                 remote_dt = datetime.strptime(
-                    res.headers[self.__class__.LAST_MODIFIED], '%a, %d %b %Y %H:%M:%S GMT'
+                    res.headers[self.__class__.LAST_MODIFIED], "%a, %d %b %Y %H:%M:%S GMT"
                 )
                 # also set release attr
                 self.release = remote_dt.strftime(self.__class__.RELEASE_FORMAT)
@@ -1011,12 +1011,12 @@ class DummyDumper(BaseDumper):
 
 
 class ManualDumper(BaseDumper):
-    '''
+    """
     This dumper will assist user to dump a resource. It will usually expect the files
     to be downloaded first (sometimes there's no easy way to automate this process).
     Once downloaded, a call to dump() will make sure everything is fine in terms of
     files and metadata
-    '''
+    """
 
     def __init__(self, *args, **kwargs):
         super(ManualDumper, self).__init__(*args, **kwargs)
@@ -1119,13 +1119,13 @@ class GoogleDriveDumper(HTTPDumper):
         raise DumperException("Don't know how to extract document ID from URL '%s'" % url)
 
     def download(self, remoteurl, localfile):
-        '''
+        """
         remoteurl is a google drive link containing a document ID, such as:
             - https://drive.google.com/open?id=<1234567890ABCDEF>
             - https://drive.google.com/file/d/<1234567890ABCDEF>/view
 
         It can also be just a document ID
-        '''
+        """
         self.prepare_local_folders(localfile)
         if remoteurl.startswith("http"):
             doc_id = self.get_document_id(remoteurl)
@@ -1163,13 +1163,13 @@ class GitDumper(BaseDumper):
         # git doesn't really care about the encoding of refnames, it only
         # seems to be limited by the underlying filesystem
         # (don't count on the above statement, it's just an educated guess)
-        cmd = ['git', 'ls-remote', '--symref', self.GIT_REPO_URL, 'HEAD']
+        cmd = ["git", "ls-remote", "--symref", self.GIT_REPO_URL, "HEAD"]
         try:
             # set locale to C so the output may have more reliable format
             result = subprocess.run(
-                cmd, stdout=subprocess.PIPE, timeout=5, check=True, env={'LC_ALL': 'C'}  # nosec
+                cmd, stdout=subprocess.PIPE, timeout=5, check=True, env={"LC_ALL": "C"}  # nosec
             )
-            r = re.compile(rb'^ref:\s+refs\/heads\/(.*)\s+HEAD$', flags=re.MULTILINE)
+            r = re.compile(rb"^ref:\s+refs\/heads\/(.*)\s+HEAD$", flags=re.MULTILINE)
             m = r.match(result.stdout)
             if m is not None:
                 return m[1]
@@ -1178,16 +1178,16 @@ class GitDumper(BaseDumper):
         return None
 
     def _get_remote_branches(self) -> List[bytes]:
-        cmd = ['git', 'ls-remote', '--heads', self.GIT_REPO_URL]
+        cmd = ["git", "ls-remote", "--heads", self.GIT_REPO_URL]
         ret = []
         try:
             # set locale to C so the output may have more reliable format
             result = subprocess.run(
-                cmd, stdout=subprocess.PIPE, timeout=5, check=True, env={'LC_ALL': 'C'}  # nosec
+                cmd, stdout=subprocess.PIPE, timeout=5, check=True, env={"LC_ALL": "C"}  # nosec
             )
             # user controls the URL anyways, and we don't use a shell
             # so it is safe
-            r = re.compile(rb'^[0-9a-f]{40}\s+refs\/heads\/(.*)$', flags=re.MULTILINE)
+            r = re.compile(rb"^[0-9a-f]{40}\s+refs\/heads\/(.*)$", flags=re.MULTILINE)
             for m in re.findall(r, result.stdout):
                 ret.append(m)
         except (TimeoutError, subprocess.CalledProcessError):
@@ -1208,13 +1208,13 @@ class GitDumper(BaseDumper):
                 return branch
             # Case 3, 'main' exists but not 'master'
             branches = self._get_remote_branches()
-            if b'main' in branches and b'master' not in branches:
-                return 'main'
+            if b"main" in branches and b"master" not in branches:
+                return "main"
         except:  # nosec  # noqa
             # fallback anything goes wrong
             pass
         # Case 4, use 'master' for compatibility reasons
-        return 'master'
+        return "master"
 
     def _clone(self, repourl, localdir):
         self.logger.info("git clone '%s' into '%s'" % (repourl, localdir))
@@ -1491,9 +1491,9 @@ class DumperManager(BaseSourceManager):
             return errors
 
     def get_schedule(self, dumper_name):
-        '''Return the corresponding schedule for dumper_name
+        """Return the corresponding schedule for dumper_name
         Example result's format: [0 9 * * *] {run in 15h:20m:33s}
-        '''
+        """
         info = None
         for sch in self.job_manager.loop._scheduled:
             if not isinstance(sch, asyncio.TimerHandle):
@@ -1573,7 +1573,7 @@ class APIDumper(BaseDumper):
         """
         This gets called by method `dump`, to populate self.to_dump
         """
-        self.to_dump = [{'remote': 'remote', 'local': 'local'}]
+        self.to_dump = [{"remote": "remote", "local": "local"}]
         # TODO: we can have get_release in another process as well
         #  but I don't think it is worth it.
         self.release = self.get_release()
@@ -1605,12 +1605,12 @@ class APIDumper(BaseDumper):
         Caveats: the existing job manager will not know how much memory
         the actual worker process is using.
         """
-        if not (remotefile == 'remote') and (localfile == 'local'):
+        if not (remotefile == "remote") and (localfile == "local"):
             raise RuntimeError("This method is not supposed to be" "called outside dump/do_dump")
         wd = os.path.abspath(os.path.realpath(self.new_data_folder))
         os.makedirs(wd, exist_ok=True)
         self.to_dump = []
-        mp_context = multiprocessing.get_context('spawn')
+        mp_context = multiprocessing.get_context("spawn")
         # specifying mp_context is Python 3.7+ only
         executor = ProcessPoolExecutor(
             max_workers=1,
@@ -1719,7 +1719,7 @@ class APIDumper(BaseDumper):
 
     def release_client(self):
         # dump will always call this method so we have to allow it
-        if inspect.stack()[1].function == 'dump':
+        if inspect.stack()[1].function == "dump":
             return
         raise RuntimeError(
             "release_client method of APIDumper and its " "descendents must not be called"
@@ -1769,20 +1769,20 @@ def _run_api_and_store_to_disk(
     try:
         for filename, obj in fn():
             fn_byte_arr = buffer.setdefault(filename, bytearray())
-            fn_byte_arr.extend(orjson.dumps(obj) + b'\n')
+            fn_byte_arr.extend(orjson.dumps(obj) + b"\n")
             if len(fn_byte_arr) >= buffer_size:
-                with open(f'{filename}.{pid}', 'ab') as f:
+                with open(f"{filename}.{pid}", "ab") as f:
                     f.write(fn_byte_arr)
                 buffer[filename].clear()
     except Exception as e:
         # cleanup
         for filename in buffer.keys():
             if os.path.exists(filename):
-                os.unlink(f'{filename}.{pid}')
+                os.unlink(f"{filename}.{pid}")
         buffer.clear()
         raise e
     for filename, fn_byte_arr in buffer.items():
-        with open(f'{filename}.{pid}', 'ab') as f:
+        with open(f"{filename}.{pid}", "ab") as f:
             f.write(fn_byte_arr)
     for filename in buffer.keys():
-        os.rename(src=f'{filename}.{pid}', dst=filename)
+        os.rename(src=f"{filename}.{pid}", dst=filename)
