@@ -1,3 +1,4 @@
+import ast
 import asyncio
 import copy
 import glob
@@ -474,7 +475,6 @@ class HubServer(object):
         self.configure_commands()
         self.configure_extra_commands()
         self.shell.set_commands(self.commands, self.extra_commands)
-        self.ingest_hooks()
         # setapi
         if self.api_config is not False:
             # after shell setup as it adds some default commands
@@ -520,6 +520,10 @@ class HubServer(object):
                     },
                 )
             )
+
+        # We should ingest hooks after finishing register hub features, api endpoints.
+        # It will help us to check for any conflict in hub's command names, hub's api endpoint names
+        self.ingest_hooks()
 
         # done
         self.configured = True
@@ -862,9 +866,70 @@ class HubServer(object):
                 self.logger.exception("Can't process hook file: %s" % e)
 
     def process_hook_file(self, hook_file):
-        strcode = open(hook_file).read()
+        strcode = self.validate_hook_code(hook_file)
         code = compile(strcode, "<string>", "exec")
         eval(code, self.shell.extra_ns, self.shell.extra_ns)
+
+    def validate_hook_code(self, hook_file):
+        '''This method will parse the hook file's source code into an AST tree.
+        We will walk through the tree to find any function definition has name conflict with hub's commands
+        and any new api endpoint conflicts with hub's api endpoints.
+
+        Note: This method is only a POC for parsing and validating hook's code solution.
+        In order to use in production, we should have ability to check for many other cases, which I just don't know yet
+        For example:
+            - Hook's author can define a variable which actually points to a function, and have same name as hub's command
+            - a function, or variable which is defined in nested scope, and actually not change the hub's internal.
+            - ...
+        '''
+
+        hub_commands = self.commands.keys()
+        hub_endpoint_names = self.api_endpoints.keys()
+        
+        strcode = open(hook_file).read()
+        tree = ast.parse(strcode)
+
+        function_names = []
+        endpoint_names = []
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                if node.name in hub_commands:
+                    function_names.append(node.name)
+            if isinstance(node, ast.Expr):
+                call_node = node.value
+                if not isinstance(call_node, ast.Call):
+                    continue
+                call_name = getattr(call_node.func, "id", None)
+                if call_name != "expose":
+                    continue
+                if len(call_node.args) > 0:
+                    endpoint_name = call_node.args[0]
+                    if endpoint_name in hub_endpoint_names:
+                        endpoint_names.append(endpoint_name)
+                    continue
+                for keyword in call_node.keywords:
+                    if keyword.arg == "endpoint_name":
+                        endpoint_name = keyword.value.value
+                        if endpoint_name in hub_endpoint_names:
+                            endpoint_names.append(endpoint_name)
+                        break
+
+        errors = []
+        if function_names:
+            errors.append(
+                f"Overriding hub's functions or commands: {', '.join(function_names)}"
+            )
+        if endpoint_names:
+            errors.append(
+                f"Overriding hub's api: {', '.join(endpoint_names)}"
+            )
+        if errors:
+            raise Exception(
+                f"Hook {hook_file} is invalid. Reason: {'; '.join(errors)}"
+            )
+
+        return strcode
 
     def configure_managers(self):
         if self.managers is not None:
