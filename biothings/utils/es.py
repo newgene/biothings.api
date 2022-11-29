@@ -12,8 +12,8 @@ from importlib import import_module
 from typing import List, Mapping, Optional
 
 from elasticsearch import (
+    ApiError,
     Elasticsearch,
-    ElasticsearchException,
     NotFoundError,
     RequestError,
     TransportError,
@@ -326,7 +326,7 @@ class ESIndexer:
             self._es, actions, chunk_size=step, max_chunk_bytes=self.step_size
         )
         if errors:
-            raise ElasticsearchException(
+            raise ApiError(
                 "%d errors while bulk-indexing: %s" % (len(errors), [str(e) for e in errors])
             )
         return num_ok, errors

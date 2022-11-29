@@ -100,7 +100,7 @@ def setup_es():
         pytest.exit('Error Loading Testing Data')
     except elasticsearch.exceptions.ImproperlyConfigured:
         pytest.exit('ES Configuration Error')
-    except elasticsearch.exceptions.ElasticsearchException:
+    except elasticsearch.exceptions.ApiError:
         pytest.exit('ES Setup Error')
 
 
