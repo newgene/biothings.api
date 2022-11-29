@@ -13,7 +13,13 @@ import biothings.hub.dataload.uploader as uploader
 from biothings.utils.backend import DocESBackend
 from biothings.utils.common import get_random_string
 from biothings.utils.es import IndexerException
-from elasticsearch import Elasticsearch, NotFoundError, RequestsHttpConnection
+from elasticsearch import Elasticsearch, NotFoundError
+import elasticsearch
+if elasticsearch.VERSION[0] < 8:
+    from elasticsearch import RequestsHttpConnection
+else:
+    from elastic_transport import RequestsHttpNode
+
 from requests_aws4auth import AWS4Auth
 
 
@@ -112,7 +118,10 @@ class BiothingsUploader(uploader.BaseSourceUploader):
                     'es'
                 )
                 es_conf['http_auth'] = AWS4Auth(*auth_args)
-                es_conf['connection_class'] = RequestsHttpConnection
+                if elasticsearch.VERSION[0] < 8:
+                    es_conf['connection_class'] = RequestsHttpConnection
+                else:
+                    es_conf['node_class'] = RequestsHttpNode
             elif auth['type'] == 'http':
                 auth_args = (
                     auth['properties']['username'],
@@ -127,7 +136,7 @@ class BiothingsUploader(uploader.BaseSourceUploader):
     def _get_repository(self, es_host: str, repo_name: str, auth: Optional[dict]):
         es = self._get_es_client(es_host, auth)
         try:
-            repo = es.snapshot.get_repository(repository=repo_name)
+            repo = es.snapshot.get_repository(name=repo_name)
         except NotFoundError:
             repo = None
         return repo
@@ -138,7 +147,9 @@ class BiothingsUploader(uploader.BaseSourceUploader):
         Create Elasticsearch Snapshot repository
         """
         es = self._get_es_client(es_host, auth)
-        es.snapshot.create_repository(repository=repo_name, body=repo_settings)
+
+        # TODO: check if this settings is correct
+        es.snapshot.create_repository(name=repo_name, type="s3", settings=repo_settings)
 
     async def restore_snapshot(self, build_meta, job_manager, **kwargs):
         self.logger.debug("Restoring snapshot...")

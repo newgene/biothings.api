@@ -400,7 +400,7 @@ class Indexer():
                 # index MUST NOT exist
                 # ----------------------
 
-                if (await client.indices.exists(self.es_index_name)):
+                if (await client.indices.exists(index=self.es_index_name)):
                     msg = ("Index '%s' already exists, (use mode='purge' to "
                            "auto-delete it or mode='resume' to add more documents)")
                     raise IndexerException(msg % self.es_index_name)
@@ -410,7 +410,7 @@ class Indexer():
                 # index MUST exist
                 # ------------------
 
-                if not (await client.indices.exists(self.es_index_name)):
+                if not (await client.indices.exists(index=self.es_index_name)):
                     raise IndexerException("'%s' does not exist." % self.es_index_name)
                 self.logger.info(("Exists", self.es_index_name))
                 return  # skip index creation
@@ -420,16 +420,17 @@ class Indexer():
                 # index MAY exist
                 # -----------------
 
-                response = await client.indices.delete(self.es_index_name, ignore_unavailable=True)
+                response = await client.indices.delete(index=self.es_index_name, ignore_unavailable=True)
                 self.logger.info(("Deleted", self.es_index_name, response))
 
             else:
                 raise ValueError("Invalid mode: %s" % mode)
 
-            response = await client.indices.create(self.es_index_name, body={
-                "settings": (await self.es_index_settings.finalize(client)),
-                "mappings": (await self.es_index_mappings.finalize(client))
-            })
+            response = await client.indices.create(
+                index=self.es_index_name,
+                settings=(await self.es_index_settings.finalize(client)),
+                mappings=(await self.es_index_mappings.finalize(client)),
+            )
             self.logger.info(("Created", self.es_index_name, response))
             return {
                 '__REPLACE__': True,
@@ -867,12 +868,13 @@ class IndexManager(BaseManager):
             client = AsyncElasticsearch(**indexer.es_client_args)
             index_name = ("hub_tmp_%s" % get_random_string()).lower()
             try:
-                return (await client.indices.create(index_name, body={
-                    "settings": (await indexer.es_index_settings.finalize(client)),
-                    "mappings": (await indexer.es_index_mappings.finalize(client))
-                }))
+                return (await client.indices.create(
+                    index=index_name,
+                    settings=(await indexer.es_index_settings.finalize(client)),
+                    mappings=(await indexer.es_index_mappings.finalize(client)),
+                ))
             finally:
-                await client.indices.delete(index_name, ignore_unavailable=True)
+                await client.indices.delete(index=index_name, ignore_unavailable=True)
                 await client.close()
 
         job = asyncio.ensure_future(_validate_mapping())
