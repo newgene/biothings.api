@@ -1,5 +1,7 @@
 import elasticsearch
 
+from biothings.utils.es_combat import SnapshotCompat
+
 
 class Repository:
     def __init__(self, client, repository):
@@ -11,17 +13,20 @@ class Repository:
 
     def exists(self):
         try:
-            self.client.snapshot.get_repository(name=self.name)
+            self.client.snapshot.get_repository(**SnapshotCompat.get_repository_args(self.name))
         except elasticsearch.exceptions.NotFoundError:
             return False
         return True
 
     def create(self, **body):
         # https://www.elastic.co/guide/en/elasticsearch/plugins/current/repository-s3-client.html
-        return self.client.snapshot.create_repository(name=self.name, **body)
+        name = body.pop("name", None) or self.name
+        return self.client.snapshot.create_repository(
+            **SnapshotCompat.create_repository_args(name, **body)
+        )
 
     def delete(self):
-        self.client.snapshot.delete_repository(name=self.name)
+        self.client.snapshot.delete_repository(**SnapshotCompat.delete_repository_args(self.name))
 
     def __str__(self):
         return (
