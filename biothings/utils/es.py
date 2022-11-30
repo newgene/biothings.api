@@ -11,14 +11,7 @@ import time
 from importlib import import_module
 from typing import List, Mapping, Optional
 
-from elasticsearch import (
-    ApiError,
-    Elasticsearch,
-    NotFoundError,
-    RequestError,
-    TransportError,
-    helpers,
-)
+from elasticsearch import Elasticsearch, NotFoundError, RequestError, TransportError, helpers
 from elasticsearch.serializer import JSONSerializer
 
 from biothings.utils.common import inf, iter_n, merge, nan, splitstr, traverse
@@ -26,6 +19,7 @@ from biothings.utils.common import inf, iter_n, merge, nan, splitstr, traverse
 # the following imports used by utils.es.Database
 from biothings.utils.dataload import dict_walk, update_dict_recur
 from biothings.utils.dotfield import parse_dot_fields
+from biothings.utils.es_combat import ApiError
 from biothings.utils.hub_db import IDatabase
 from biothings.utils.serializer import to_json
 

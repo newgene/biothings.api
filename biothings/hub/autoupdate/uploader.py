@@ -1,26 +1,19 @@
-import datetime
-import os
 import asyncio
+import datetime
 import json
-import random
-import string
-import re
+import os
 from functools import partial
 from typing import Optional
 
-from biothings import config as btconfig
+from elasticsearch import Elasticsearch, NotFoundError
+from requests_aws4auth import AWS4Auth
+
 import biothings.hub.dataload.uploader as uploader
+from biothings import config as btconfig
 from biothings.utils.backend import DocESBackend
 from biothings.utils.common import get_random_string
 from biothings.utils.es import IndexerException
-from elasticsearch import Elasticsearch, NotFoundError
-import elasticsearch
-if elasticsearch.VERSION[0] < 8:
-    from elasticsearch import RequestsHttpConnection
-else:
-    from elastic_transport import RequestsHttpNode
-
-from requests_aws4auth import AWS4Auth
+from biothings.utils.es_combat import get_es_transport_conf
 
 
 class BiothingsUploader(uploader.BaseSourceUploader):
@@ -118,10 +111,7 @@ class BiothingsUploader(uploader.BaseSourceUploader):
                     'es'
                 )
                 es_conf['http_auth'] = AWS4Auth(*auth_args)
-                if elasticsearch.VERSION[0] < 8:
-                    es_conf['connection_class'] = RequestsHttpConnection
-                else:
-                    es_conf['node_class'] = RequestsHttpNode
+                es_conf.update(**get_es_transport_conf())
             elif auth['type'] == 'http':
                 auth_args = (
                     auth['properties']['username'],
