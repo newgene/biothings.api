@@ -1,20 +1,19 @@
-import datetime
-import os
 import asyncio
+import datetime
 import json
-import random
-import string
-import re
+import os
 from functools import partial
 from typing import Optional
 
-from biothings import config as btconfig
+from elasticsearch import Elasticsearch, NotFoundError
+from requests_aws4auth import AWS4Auth
+
 import biothings.hub.dataload.uploader as uploader
+from biothings import config as btconfig
 from biothings.utils.backend import DocESBackend
 from biothings.utils.common import get_random_string
 from biothings.utils.es import IndexerException
-from elasticsearch import Elasticsearch, NotFoundError, RequestsHttpConnection
-from requests_aws4auth import AWS4Auth
+from biothings.utils.es_combat import get_es_transport_conf
 
 
 class BiothingsUploader(uploader.BaseSourceUploader):
@@ -112,7 +111,7 @@ class BiothingsUploader(uploader.BaseSourceUploader):
                     'es'
                 )
                 es_conf['http_auth'] = AWS4Auth(*auth_args)
-                es_conf['connection_class'] = RequestsHttpConnection
+                es_conf.update(**get_es_transport_conf())
             elif auth['type'] == 'http':
                 auth_args = (
                     auth['properties']['username'],
@@ -127,7 +126,7 @@ class BiothingsUploader(uploader.BaseSourceUploader):
     def _get_repository(self, es_host: str, repo_name: str, auth: Optional[dict]):
         es = self._get_es_client(es_host, auth)
         try:
-            repo = es.snapshot.get_repository(repository=repo_name)
+            repo = es.snapshot.get_repository(name=repo_name)
         except NotFoundError:
             repo = None
         return repo
@@ -138,7 +137,9 @@ class BiothingsUploader(uploader.BaseSourceUploader):
         Create Elasticsearch Snapshot repository
         """
         es = self._get_es_client(es_host, auth)
-        es.snapshot.create_repository(repository=repo_name, body=repo_settings)
+
+        # TODO: check if this settings is correct
+        es.snapshot.create_repository(name=repo_name, type="s3", settings=repo_settings)
 
     async def restore_snapshot(self, build_meta, job_manager, **kwargs):
         self.logger.debug("Restoring snapshot...")

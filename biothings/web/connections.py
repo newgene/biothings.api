@@ -9,8 +9,9 @@ import elasticsearch
 import elasticsearch_dsl
 import requests
 from biothings.utils.common import run_once
-from elasticsearch import AIOHttpConnection
-from elasticsearch import RequestsHttpConnection as _Conn
+from biothings.utils import es_combat
+import elasticsearch
+
 from requests_aws4auth import AWS4Auth
 from tornado.ioloop import IOLoop
 
@@ -52,33 +53,6 @@ def _log_es(client, hosts):
         IOLoop.current().add_callback(log_cluster, client)
 
 
-# ------------------------
-#   Low Level Functions
-# ------------------------
-
-
-class _AsyncConn(AIOHttpConnection):
-    def __init__(self, *args, **kwargs):
-        self.aws_auth = None
-        if isinstance(kwargs.get('http_auth'), AWS4Auth):
-            self.aws_auth = kwargs['http_auth']
-            kwargs['http_auth'] = None
-        super().__init__(*args, **kwargs)
-
-    async def perform_request(
-        self, method, url, params=None, body=None,
-        timeout=None, ignore=(), headers=None
-    ):
-        req = requests.PreparedRequest()
-        req.prepare(method, self.host + url, headers, None, body, params)
-        self.aws_auth(req)  # sign the request
-        headers.update(req.headers)
-        return await super().perform_request(
-            method, url, params, body,
-            timeout, ignore, headers
-        )
-
-
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-identity-documents.html
 AWS_META_URL = "http://169.254.169.254/latest/dynamic/instance-identity/document"
 
@@ -115,8 +89,12 @@ def get_es_client(hosts=None, async_=False, **settings):
             region=region, service='es'
         )
 
-        _cc = _AsyncConn if async_ else _Conn
-        settings.update(http_auth=awsauth, connection_class=_cc)
+        settings.update(http_auth=awsauth)
+        settings.update(**es_combat.get_es_transport_conf(
+            es_combat.AsyncTransportClass
+            if async_
+            else es_combat.TransportClass
+        ))
         settings.setdefault('use_ssl', True)
         settings.setdefault('verify_certs', True)
 
