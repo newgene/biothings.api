@@ -7,3 +7,5 @@
 
 # make sure hub is config before testing.
 import biothings.hub
+
+from .pytest_plugins import pytest_collection_finish

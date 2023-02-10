@@ -84,8 +84,6 @@ from typing import Optional, Union
 import pytest
 import requests
 import urllib3
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 
 from biothings.utils.common import traverse
 from biothings.web.launcher import BiothingsAPI
@@ -99,6 +97,14 @@ class BiothingsWebTest:
     scheme = 'http'
     prefix = 'v1'
     host = ''
+
+    @classmethod
+    def get_base_url(cls):
+        scheme = os.getenv("TEST_SCHEME", cls.scheme)
+        host = os.getenv("TEST_HOST", cls.host).strip('/')
+        if not host:
+            return ""
+        return f"{scheme}://{host}"
 
     def request(self, path, method='GET', expect=200, **kwargs):
         """
@@ -118,9 +124,8 @@ class BiothingsWebTest:
         Return an absolute url when class var 'host' is defined.
         If not, return a path relative to the host root.
         """
-        scheme = os.getenv("TEST_SCHEME", self.scheme)
+        base_url = self.get_base_url()
         prefix = os.getenv("TEST_PREFIX", self.prefix).strip('/')
-        host = os.getenv("TEST_HOST", self.host).strip('/')
 
         # already an absolute path
         if path.lower().startswith(("http://", "https://")):
@@ -133,8 +138,8 @@ class BiothingsWebTest:
             path = '/' + path
 
         # host standardization
-        if host:
-            path = f"{scheme}://{host}{path}"
+        if base_url:
+            path = f"{base_url}{path}"
 
         return path
 
