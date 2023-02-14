@@ -1,3 +1,9 @@
+"""Ref: https://docs.pytest.org/en/7.1.x/how-to/writing_plugins.html#making-your-plugin-installable-by-others
+
+This module is placed inside biothings.utils.
+Doing so will help pytest can discover it's plugins, and other app can use them.
+"""
+
 import pytest
 from _pytest.capture import SysCapture
 

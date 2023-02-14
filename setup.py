@@ -130,4 +130,5 @@ setup(
         "hub": hub_requires,
         "dev": web_extra_requires + hub_requires + dev_requires + docs_requires,
     },
+    entry_points={"biothings_pytest_plugins": ["name_of_plugin = utils.pytest_plugins"]},
 )
