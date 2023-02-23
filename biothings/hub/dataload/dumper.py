@@ -334,7 +334,15 @@ class BaseDumper(object):
             self.src_doc.update(extra)
         self.src_dump.save(self.src_doc)
 
-    async def dump(self, steps=None, force=False, job_manager=None, check_only=False, **kwargs):
+    async def dump(
+        self,
+        steps=None,
+        force=False,
+        job_manager=None,
+        check_only=False,
+        dump_only=False,
+        **kwargs,
+    ):
         '''
         Dump (ie. download) resource as needed
         this should be called after instance creation
@@ -408,7 +416,7 @@ class BaseDumper(object):
                     raise got_error
                 # set it to success at the very end
                 self.register_status("success")
-                if self.__class__.AUTO_UPLOAD:
+                if self.__class__.AUTO_UPLOAD and not dump_only:
                     set_pending_to_upload(self.src_name)
                 self.logger.info("success %s" % strargs, extra={"notify": True})
         except (KeyboardInterrupt, Exception) as e:
