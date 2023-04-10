@@ -7,7 +7,7 @@ to a fully operational BioThings API. In a second part, this API will enrich for
 
 .. note:: You may also want to read the `developer's guide <studio_guide.html>`_ for more detailed informations.
 
-.. note:: The following tutorial is only valid for **BioThings Studio** release **0.2b**. Check
+.. note:: The following tutorial is only valid for **BioThings Studio** release `0.4a <https://github.com/biothings/biothings_studio/releases/tag/0.4a>`_ which based on Biothing SDK  `release 0.11.x <https://github.com/biothings/biothings.api/commits/0.11.x>`_. Check
    all available `releases <https://github.com/biothings/biothings_studio/releases>`_ for more.
 
 =================
@@ -56,7 +56,7 @@ using ``-g`` option:
 
 .. code:: bash
 
-  $ docker pull biothings/biothings-studio:0.2b
+  $ docker pull biothings/biothings-studio:0.4a
 
 A **BioThings Studio** instance exposes several services on different ports:
 
@@ -76,9 +76,9 @@ having to enter the container:
 .. code:: bash
 
   $ docker run --rm --name studio -p 8080:8080 -p 7022:7022 -p 7080:7080 -p 7081:7081 -p 9200:9200 \
-    -p 27017:27017 -p 8000:8000 -p 9000:9000 -p 60080:60080 -d biothings/biothings-studio:0.2b
+    -p 27017:27017 -p 8000:8000 -p 9000:9000 -p 60080:60080 -d biothings/biothings-studio:0.4a
 
-.. note:: we need to add the release number after the image name: biothings-studio:**0.2b**. Should you use another release (including unstable releases,
+.. note:: we need to add the release number after the image name: biothings-studio:**0.4a**. Should you use another release (including unstable releases,
    tagged as ``master``) you would need to adjust this parameter accordingly.
 
 .. note:: Biothings Studio and the Hub are not designed to be publicly accessible. Those ports should **not** be exposed. When

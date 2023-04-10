@@ -47,7 +47,7 @@ Docker Hub registry, and can be pulled using:
 
 .. code:: bash
 
-   $ docker pull biothings/biothings-studio:0.2a
+   $ docker pull biothings/biothings-studio:0.4a
 
 .. image:: ../_static/hubstack.png
    :width: 100%
@@ -278,7 +278,7 @@ Note each time a parameter is changed, **Hub** needs to be restarted, as shown o
 4. Data plugin architecture and specifications
 ===========================================
 
-**BioThings Studio** allows to easily define and register datasources using *data plugins*. As of **BioThings Studio 0.2b**, there are two
+**BioThings Studio** allows to easily define and register datasources using *data plugins*. As of **BioThings Studio 0.4a**, there are two
 different types of data plugin.
 
 4.1. Manifest plugins
